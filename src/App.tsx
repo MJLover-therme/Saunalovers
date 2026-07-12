@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MapView from './components/map/MapView';
 import PlaceDetailPanel from './components/detail/PlaceDetailPanel';
@@ -23,7 +23,16 @@ export default function App() {
   const { loading, error } = useData();
   const [view, setView] = useState<View>('map');
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+
+  // From a tier-list card: jump to the map and focus that sauna's marker.
+  const goToSauna = useCallback((placeId: string) => {
+    setSelectedPlaceId(null);
+    setView('map');
+    setFocusPlaceId(placeId);
+  }, []);
+  const clearFocus = useCallback(() => setFocusPlaceId(null), []);
 
   // Shared-password gate: nothing else renders until logged in.
   if (!isAuthenticated) return <LoginScreen />;
@@ -106,6 +115,8 @@ export default function App() {
             <MapView
               onOpenDetail={setSelectedPlaceId}
               selectedPlaceId={selectedPlaceId}
+              focusPlaceId={focusPlaceId}
+              onFocusHandled={clearFocus}
             />
           </div>
         )}
@@ -120,7 +131,9 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {view === 'tierlists' && <UserTierlistsView />}
+                {view === 'tierlists' && (
+                  <UserTierlistsView onGoToSauna={goToSauna} />
+                )}
                 {view === 'far' && (
                   <FarPlacesList onOpenDetail={setSelectedPlaceId} />
                 )}

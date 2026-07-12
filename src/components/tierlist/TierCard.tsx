@@ -25,7 +25,7 @@ const TierCard = forwardRef<HTMLDivElement, Props>(function TierCard(
       style={style}
       className={`flex touch-none select-none items-center gap-2 rounded-lg bg-base-700 py-1.5 pl-1.5 pr-3 text-sm font-medium text-slate-100 shadow-md ring-1 ring-white/10 ${
         dragging ? 'opacity-40' : ''
-      } ${overlay ? 'rotate-2 scale-105 shadow-2xl ring-accent/60' : ''} cursor-grab active:cursor-grabbing`}
+      } ${overlay ? 'rotate-2 scale-105 shadow-2xl ring-accent/60' : ''} cursor-pointer transition-transform hover:-translate-y-0.5 active:cursor-grabbing`}
       {...rest}
     >
       {imageUrl ? (

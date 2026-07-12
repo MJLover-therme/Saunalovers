@@ -13,7 +13,7 @@ export const VISIT_STATUS: Record<
   { label: string; color: string; emoji: string }
 > = {
   not_visited: { label: 'Unbesucht', color: '#64748b', emoji: '⚪' },
-  planned: { label: 'Geplant', color: '#f59e0b', emoji: '🟠' },
+  planned: { label: 'Geplant', color: '#facc15', emoji: '🟡' },
   visited: { label: 'Besucht', color: '#22c55e', emoji: '🟢' },
 };
 

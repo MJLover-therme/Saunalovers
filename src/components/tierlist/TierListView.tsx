@@ -51,13 +51,15 @@ const collisionDetection: CollisionDetection = (args) => {
 
 interface Props {
   viewedUserId: string;
+  onGoToSauna: (placeId: string) => void;
 }
 
 /**
  * TierMaker-style list for one user. Editable (drag between rows / reorder /
  * drag to trash to unrate) only when viewing your own list; otherwise read-only.
+ * Short-clicking a card jumps to that sauna on the map.
  */
-export default function TierListView({ viewedUserId }: Props) {
+export default function TierListView({ viewedUserId, onGoToSauna }: Props) {
   const { currentUser } = useCurrentUser();
   const {
     ratingsForUser,
@@ -239,6 +241,7 @@ export default function TierListView({ viewedUserId }: Props) {
           getName={getName}
           getStatus={getStatus}
           getImage={getImage}
+          onGoToSauna={onGoToSauna}
         />
       ))}
     </div>

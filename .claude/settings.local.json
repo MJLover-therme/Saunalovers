@@ -38,7 +38,9 @@
       "Bash(curl -s -A \"Saunalovers/1.0\" \"https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=49.0069%7C8.4037&ggsradius=450&ggslimit=5&ggsnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=256\")",
       "Bash(node -e ' *)",
       "Bash(sed -i 's/} catch {}/} catch \\(e\\) { console.log\\(\"ERR\", e.message\\); }/' C:/Users/Laduf/AppData/Local/Temp/claude/C--Users-Laduf-Desktop-Saunalovers/21cb3320-4cb3-4cee-898d-49c6ed089441/scratchpad/fetch_images.mjs)",
-      "Bash(sed -i 's/if \\(!r.ok\\) return null;/if \\(!r.ok\\) { console.log\\(\"HTTP\", r.status\\); return null; }/' C:/Users/Laduf/AppData/Local/Temp/claude/C--Users-Laduf-Desktop-Saunalovers/21cb3320-4cb3-4cee-898d-49c6ed089441/scratchpad/fetch_images.mjs)"
+      "Bash(sed -i 's/if \\(!r.ok\\) return null;/if \\(!r.ok\\) { console.log\\(\"HTTP\", r.status\\); return null; }/' C:/Users/Laduf/AppData/Local/Temp/claude/C--Users-Laduf-Desktop-Saunalovers/21cb3320-4cb3-4cee-898d-49c6ed089441/scratchpad/fetch_images.mjs)",
+      "Bash(git rm *)",
+      "Bash(git commit -q -m 'Remove .env.production from repo \\(Vercel build generates its own\\) *)"
     ]
   }
 }

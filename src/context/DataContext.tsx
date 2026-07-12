@@ -159,6 +159,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
         return [...rest, optimistic];
       });
+
+      // Rating a place implies you've been there → ensure it's marked visited.
+      setVisits((prev) => {
+        if (
+          prev.some(
+            (v) =>
+              v.user_id === userId &&
+              v.place_id === placeId &&
+              v.status === 'visited',
+          )
+        )
+          return prev;
+        const rest = prev.filter(
+          (v) => !(v.user_id === userId && v.place_id === placeId),
+        );
+        return [
+          ...rest,
+          {
+            id: `temp-visit-${placeId}`,
+            user_id: userId,
+            place_id: placeId,
+            status: 'visited',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+      });
+      void api
+        .upsertVisit({ user_id: userId, place_id: placeId, status: 'visited' })
+        .then((savedVisit) =>
+          setVisits((prev) =>
+            prev.map((v) =>
+              v.user_id === userId && v.place_id === placeId ? savedVisit : v,
+            ),
+          ),
+        )
+        .catch((err) => console.error('auto-visit failed', err));
+
       try {
         const saved = await api.upsertRating({
           user_id: userId,

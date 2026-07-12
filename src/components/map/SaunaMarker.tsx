@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
+import type { Marker as LeafletMarker } from 'leaflet';
 import { buildMarkerIcon } from './markerIcon';
 import TierPicker from '../ui/TierPicker';
+import TierBadge from '../ui/TierBadge';
 import VisitStatusPicker from '../ui/VisitStatusPicker';
+import Avatar from '../ui/Avatar';
 import { useData } from '../../context/DataContext';
 import { useCurrentUser } from '../../context/CurrentUserContext';
 import type { Place } from '../../types';
@@ -11,14 +14,20 @@ interface Props {
   place: Place;
   selected: boolean;
   onOpenDetail: (placeId: string) => void;
+  registerMarker: (placeId: string, marker: LeafletMarker | null) => void;
 }
 
 /**
- * A single map marker with an inline popup. The popup lets the current user set
- * their visit status and assign a tier right from the map (one of the two tier
- * editing surfaces), or open the full detail panel.
+ * A single map marker with an inline popup. The popup shows the other users'
+ * comments as chat bubbles, lets the current user set their visit status and
+ * tier right from the map, or open the full detail panel.
  */
-export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
+export default function SaunaMarker({
+  place,
+  selected,
+  onOpenDetail,
+  registerMarker,
+}: Props) {
   const { currentUser } = useCurrentUser();
   const {
     ratingFor,
@@ -27,11 +36,16 @@ export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
     clearRating,
     setVisit,
     ratingsForPlace,
+    commentsForPlace,
+    userById,
   } = useData();
 
   const rating = ratingFor(currentUser.id, place.id);
   const status = visitStatusFor(currentUser.id, place.id);
   const totalRatings = ratingsForPlace(place.id).length;
+  const otherComments = commentsForPlace(place.id).filter(
+    (c) => c.user_id !== currentUser.id,
+  );
 
   const icon = useMemo(
     () => buildMarkerIcon(status, rating?.tier, selected),
@@ -42,18 +56,43 @@ export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
     <Marker
       position={[place.latitude, place.longitude]}
       icon={icon}
-      // Clicking a marker opens the full detail panel (with comments) right
-      // away; the popup stays available for quick actions on the map.
-      eventHandlers={{ click: () => onOpenDetail(place.id) }}
+      ref={(m) => registerMarker(place.id, m)}
     >
       <Popup>
-        <div className="w-60 space-y-3 font-sans">
+        <div className="w-64 space-y-3 font-sans">
           <div>
             <h3 className="text-base font-bold text-slate-900">{place.name}</h3>
             {place.address && (
               <p className="text-xs text-slate-500">{place.address}</p>
             )}
           </div>
+
+          {/* Other people's comments as chat bubbles */}
+          {otherComments.length > 0 && (
+            <div className="space-y-1.5">
+              {otherComments.map((c) => {
+                const author = userById(c.user_id);
+                return (
+                  <div key={c.id} className="flex items-start gap-1.5">
+                    <Avatar
+                      userId={c.user_id}
+                      username={author?.username ?? '?'}
+                      color={author?.color}
+                      size="sm"
+                    />
+                    <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-slate-100 px-2.5 py-1.5">
+                      <p className="text-[11px] font-bold text-slate-900">
+                        {author?.username ?? 'Unbekannt'}
+                      </p>
+                      <p className="whitespace-pre-wrap break-words text-xs leading-snug text-slate-600">
+                        {c.body}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
@@ -66,9 +105,12 @@ export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Deine Bewertung
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                Deine Bewertung
+              </p>
+              {rating && <TierBadge tier={rating.tier} size="sm" />}
+            </div>
             <TierPicker
               value={rating?.tier}
               onChange={(t) => void setRating(currentUser.id, place.id, t)}

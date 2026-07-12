@@ -8,10 +8,21 @@ interface Props {
   name: string;
   status?: VisitStatus;
   imageUrl?: string | null;
+  onActivate?: () => void;
 }
 
-/** Draggable/sortable wrapper around TierCard for the editable tier list. */
-export default function SortableTierCard({ id, name, status, imageUrl }: Props) {
+/**
+ * Draggable/sortable wrapper around TierCard. A short click (no drag) calls
+ * onActivate; holding and moving past the sensor threshold starts a drag — so
+ * dnd-kit suppresses the click and reordering wins.
+ */
+export default function SortableTierCard({
+  id,
+  name,
+  status,
+  imageUrl,
+  onActivate,
+}: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -22,6 +33,8 @@ export default function SortableTierCard({ id, name, status, imageUrl }: Props) 
       status={status}
       imageUrl={imageUrl}
       dragging={isDragging}
+      title="Auf der Karte anzeigen"
+      onClick={() => onActivate?.()}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,

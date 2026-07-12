@@ -12,6 +12,7 @@ interface Props {
   getName: (placeId: string) => string;
   getStatus: (placeId: string) => VisitStatus | undefined;
   getImage: (placeId: string) => string | null;
+  onGoToSauna: (placeId: string) => void;
 }
 
 /** One TierMaker-style row: a colored label block + its cards (droppable). */
@@ -22,6 +23,7 @@ export default function TierRow({
   getName,
   getStatus,
   getImage,
+  onGoToSauna,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: tier, disabled: !editable });
 
@@ -51,6 +53,7 @@ export default function TierRow({
                 name={getName(id)}
                 status={getStatus(id)}
                 imageUrl={getImage(id)}
+                onActivate={() => onGoToSauna(id)}
               />
             ))}
           </SortableContext>
@@ -61,6 +64,8 @@ export default function TierRow({
               name={getName(id)}
               status={getStatus(id)}
               imageUrl={getImage(id)}
+              title="Auf der Karte anzeigen"
+              onClick={() => onGoToSauna(id)}
             />
           ))
         )}

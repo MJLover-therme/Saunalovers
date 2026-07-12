@@ -5,11 +5,15 @@ import TierListView from '../tierlist/TierListView';
 import { useData } from '../../context/DataContext';
 import { useCurrentUser } from '../../context/CurrentUserContext';
 
+interface Props {
+  onGoToSauna: (placeId: string) => void;
+}
+
 /**
  * Community tier-list tab: a selector of all users on top, and the chosen user's
  * TierMaker-style list below (editable only if it's the current user's own).
  */
-export default function UserTierlistsView() {
+export default function UserTierlistsView({ onGoToSauna }: Props) {
   const { currentUser } = useCurrentUser();
   const { users, ratingsForUser } = useData();
   const [selectedId, setSelectedId] = useState(currentUser.id);
@@ -53,7 +57,7 @@ export default function UserTierlistsView() {
         })}
       </div>
 
-      <TierListView viewedUserId={selectedId} />
+      <TierListView viewedUserId={selectedId} onGoToSauna={onGoToSauna} />
     </div>
   );
 }

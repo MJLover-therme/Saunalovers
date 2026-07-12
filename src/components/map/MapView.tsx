@@ -1,12 +1,16 @@
+import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap, Marker } from 'react-leaflet';
-import L from 'leaflet';
+import L, { type Marker as LeafletMarker } from 'leaflet';
 import { useData } from '../../context/DataContext';
 import { KARLSRUHE, DEFAULT_ZOOM, RADIUS_KM, VISIT_STATUS, VISIT_STATUS_ORDER } from '../../lib/config';
+import type { Place } from '../../types';
 import SaunaMarker from './SaunaMarker';
 
 interface Props {
   onOpenDetail: (placeId: string) => void;
   selectedPlaceId: string | null;
+  focusPlaceId?: string | null;
+  onFocusHandled?: () => void;
   picking?: boolean;
   onPick?: (lat: number, lng: number) => void;
   picked?: [number, number] | null;
@@ -45,14 +49,55 @@ function RecenterButton() {
   );
 }
 
+/**
+ * Flies to a requested sauna (e.g. clicked from the tier list) and opens its
+ * popup, then clears the request.
+ */
+function FocusController({
+  focusPlaceId,
+  places,
+  markerRefs,
+  onFocusHandled,
+}: {
+  focusPlaceId?: string | null;
+  places: Place[];
+  markerRefs: React.MutableRefObject<Record<string, LeafletMarker | null>>;
+  onFocusHandled?: () => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focusPlaceId) return;
+    const place = places.find((p) => p.id === focusPlaceId);
+    if (!place) {
+      onFocusHandled?.();
+      return;
+    }
+    map.flyTo(
+      [place.latitude, place.longitude],
+      Math.max(map.getZoom(), 13),
+      { duration: 0.9 },
+    );
+    const t = setTimeout(() => {
+      markerRefs.current[focusPlaceId]?.openPopup();
+      onFocusHandled?.();
+    }, 950);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPlaceId]);
+  return null;
+}
+
 export default function MapView({
   onOpenDetail,
   selectedPlaceId,
+  focusPlaceId,
+  onFocusHandled,
   picking,
   onPick,
   picked,
 }: Props) {
   const { places } = useData();
+  const markerRefs = useRef<Record<string, LeafletMarker | null>>({});
 
   return (
     <div className="relative h-full w-full">
@@ -85,14 +130,23 @@ export default function MapView({
           <SaunaMarker
             key={place.id}
             place={place}
-            selected={place.id === selectedPlaceId}
+            selected={place.id === selectedPlaceId || place.id === focusPlaceId}
             onOpenDetail={onOpenDetail}
+            registerMarker={(id, m) => {
+              markerRefs.current[id] = m;
+            }}
           />
         ))}
 
         {picking && <ClickHandler onPick={onPick} />}
         {picked && <Marker position={picked} icon={pickIcon} />}
 
+        <FocusController
+          focusPlaceId={focusPlaceId}
+          places={places}
+          markerRefs={markerRefs}
+          onFocusHandled={onFocusHandled}
+        />
         <RecenterButton />
       </MapContainer>
 
