@@ -6,7 +6,9 @@ import UserTierlistsView from './components/users/UserTierlistsView';
 import FarPlacesList from './components/places/FarPlacesList';
 import AddPlaceModal from './components/places/AddPlaceModal';
 import UserSwitcher from './components/users/UserSwitcher';
+import LoginScreen from './components/auth/LoginScreen';
 import { useData } from './context/DataContext';
+import { useAuth } from './context/CurrentUserContext';
 
 type View = 'map' | 'tierlists' | 'far';
 
@@ -17,10 +19,14 @@ const TABS: { id: View; label: string; icon: string }[] = [
 ];
 
 export default function App() {
+  const { isAuthenticated } = useAuth();
   const { loading, error } = useData();
   const [view, setView] = useState<View>('map');
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+
+  // Shared-password gate: nothing else renders until logged in.
+  if (!isAuthenticated) return <LoginScreen />;
 
   return (
     <div className="flex h-full flex-col">

@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Avatar from '../ui/Avatar';
-import { useCurrentUser } from '../../context/CurrentUserContext';
+import { useAuth } from '../../context/CurrentUserContext';
 
 /**
- * Active-profile picker (there is no login in this build). Switching changes
- * whose ratings/comments/visits are editable across the whole app.
+ * Header account control: shows the logged-in profile and a logout action.
+ * (Switching profiles means logging out and back in — the app is password-gated.)
  */
 export default function UserSwitcher() {
-  const { currentUser, setCurrentUserId, profiles } = useCurrentUser();
+  const { currentUser, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -20,6 +20,8 @@ export default function UserSwitcher() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  if (!currentUser) return null;
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -28,14 +30,11 @@ export default function UserSwitcher() {
         className="flex items-center gap-2 rounded-full bg-white/5 py-1 pl-1 pr-3 ring-1 ring-white/10 transition-colors hover:bg-white/10"
       >
         <Avatar userId={currentUser.id} username={currentUser.username} size="sm" />
-        <span className="text-sm font-semibold text-slate-100">
+        <span className="hidden text-sm font-semibold text-slate-100 sm:block">
           {currentUser.username}
         </span>
         <svg width="14" height="14" viewBox="0 0 24 24" className="text-slate-400">
-          <path
-            fill="currentColor"
-            d="M7 10l5 5 5-5z"
-          />
+          <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
       </button>
 
@@ -46,31 +45,28 @@ export default function UserSwitcher() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="glass absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl p-1.5 shadow-2xl ring-1 ring-white/10"
+            className="glass absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl p-1.5 shadow-2xl ring-1 ring-white/10"
           >
-            <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Angemeldet als
-            </p>
-            {profiles.map((p) => {
-              const active = p.id === currentUser.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setCurrentUserId(p.id);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors ${
-                    active ? 'bg-accent/15 text-white' : 'text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  <Avatar userId={p.id} username={p.username} size="sm" />
-                  <span className="font-medium">{p.username}</span>
-                  {active && <span className="ml-auto text-accent">✓</span>}
-                </button>
-              );
-            })}
+            <div className="flex items-center gap-2.5 px-2 py-2">
+              <Avatar userId={currentUser.id} username={currentUser.username} size="sm" />
+              <div className="leading-tight">
+                <p className="text-sm font-semibold text-slate-100">
+                  {currentUser.username}
+                </p>
+                <p className="text-[11px] text-slate-500">angemeldet</p>
+              </div>
+            </div>
+            <div className="my-1 h-px bg-white/10" />
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-red-300"
+            >
+              <span>↩︎</span> Abmelden
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

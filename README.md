@@ -2,7 +2,7 @@
 
 A community web app to discover, visit-track and **tier-rate** saunas & thermal baths around Karlsruhe. Map-first, with per-user TierMaker-style tier lists you can compare across friends.
 
-Built for three friends — there is **no login**. Instead you pick one of three fixed profiles and switch between them.
+Built for three friends (Jannik, Mert, Tim). There is **no per-user auth** — you pick a profile and enter a single **shared password** to log in.
 
 ## ✨ Features
 
