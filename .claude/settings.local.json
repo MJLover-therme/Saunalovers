@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -p \"Product Requirements Document_Zish.docx\" word/document.xml)",
+      "Bash(npm -v)",
+      "Bash(git --version)",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__list_projects",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__list_organizations",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__list_tables",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__get_project_url",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__get_publishable_keys",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__apply_migration",
+      "Bash(OUT=C:/Users/Laduf/AppData/Local/Temp/claude/C--Users-Laduf-Desktop-Saunalovers/21cb3320-4cb3-4cee-898d-49c6ed089441/scratchpad node C:/Users/Laduf/AppData/Local/Temp/claude/C--Users-Laduf-Desktop-Saunalovers/21cb3320-4cb3-4cee-898d-49c6ed089441/scratchpad/process.mjs)",
+      "mcp__48d7571e-9198-4549-a3c3-e6d4ca2238ee__execute_sql",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)"
+    ]
+  }
+}

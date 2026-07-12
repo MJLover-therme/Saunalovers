@@ -1,0 +1,26 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment (keep secrets out of git; publishable key is client-safe but
+# still avoid committing environment files)
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
