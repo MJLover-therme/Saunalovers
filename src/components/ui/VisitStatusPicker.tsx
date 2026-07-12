@@ -9,16 +9,10 @@ interface Props {
   value: VisitStatus;
   onChange: (status: VisitStatus) => void;
   disabled?: boolean;
-  compact?: boolean;
 }
 
-/** Three-way visit status selector (not visited / planned / visited). */
-export default function VisitStatusPicker({
-  value,
-  onChange,
-  disabled,
-  compact,
-}: Props) {
+/** Three-way visit status selector (Unbesucht / Geplant / Besucht). */
+export default function VisitStatusPicker({ value, onChange, disabled }: Props) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {VISIT_STATUS_ORDER.map((status) => {
@@ -42,7 +36,7 @@ export default function VisitStatusPicker({
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: active ? '#fff' : meta.color }}
             />
-            {compact ? meta.label.split(' ')[0] : meta.label}
+            {meta.label}
           </motion.button>
         );
       })}

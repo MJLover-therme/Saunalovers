@@ -74,6 +74,21 @@ export default function PlaceDetailPanel({ placeId, onClose }: Props) {
             </div>
 
             <div className="space-y-6 p-5">
+              {place.image_url && (
+                <img
+                  src={place.image_url.replace('/256px-', '/640px-')}
+                  alt={place.name}
+                  className="h-44 w-full rounded-2xl object-cover ring-1 ring-white/10"
+                  onError={(e) => {
+                    // 640px variant may not exist for small originals — fall
+                    // back to the stored thumb before hiding entirely.
+                    const img = e.currentTarget;
+                    if (img.src !== place.image_url) img.src = place.image_url!;
+                    else img.style.display = 'none';
+                  }}
+                />
+              )}
+
               {/* Your controls */}
               <section className="space-y-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
                 <p className="text-sm font-semibold text-slate-200">Deine Angaben</p>

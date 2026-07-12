@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  MeasuringStrategy,
+  type CollisionDetection,
   type DragStartEvent,
   type DragOverEvent,
   type DragEndEvent,
@@ -37,6 +41,14 @@ function findContainer(cols: Columns, id: string): Tier | undefined {
   return TIERS.find((t) => cols[t].includes(id));
 }
 
+// Prefer whatever the pointer is actually over; fall back to rect overlap.
+// Much more predictable across rows than closestCorners.
+const collisionDetection: CollisionDetection = (args) => {
+  const withPointer = pointerWithin(args);
+  if (withPointer.length > 0) return withPointer;
+  return rectIntersection(args);
+};
+
 interface Props {
   viewedUserId: string;
 }
@@ -47,8 +59,14 @@ interface Props {
  */
 export default function TierListView({ viewedUserId }: Props) {
   const { currentUser } = useCurrentUser();
-  const { ratingsForUser, placeById, visitStatusFor, reorderUserRatings, clearRating, userById } =
-    useData();
+  const {
+    ratingsForUser,
+    placeById,
+    visitStatusFor,
+    reorderUserRatings,
+    clearRating,
+    userById,
+  } = useData();
 
   const editable = viewedUserId === currentUser.id;
   const userRatings = ratingsForUser(viewedUserId);
@@ -64,20 +82,47 @@ export default function TierListView({ viewedUserId }: Props) {
     [userRatings],
   );
 
-  const [columns, setColumns] = useState<Columns>(() => buildColumns(userRatings));
+  const [columns, setColumnsState] = useState<Columns>(() =>
+    buildColumns(userRatings),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Ref mirrors columns so drag handlers always persist the latest layout,
+  // never a stale render's closure.
+  const columnsRef = useRef(columns);
+  const draggingRef = useRef(false);
+
+  const setColumns = useCallback(
+    (updater: (prev: Columns) => Columns) => {
+      setColumnsState((prev) => {
+        const next = updater(prev);
+        columnsRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
+
   useEffect(() => {
-    setColumns(buildColumns(ratingsForUser(viewedUserId)));
+    // Don't clobber the local layout while a drag is in flight — the server
+    // echo of our own persist would otherwise snap cards around mid-drag.
+    if (draggingRef.current) return;
+    const next = buildColumns(ratingsForUser(viewedUserId));
+    columnsRef.current = next;
+    setColumnsState(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, viewedUserId]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    }),
   );
 
   const getName = (id: string) => placeById(id)?.name ?? '—';
   const getStatus = (id: string) => visitStatusFor(viewedUserId, id);
+  const getImage = (id: string) => placeById(id)?.image_url ?? null;
 
   const persist = (cols: Columns) => {
     const next: { place_id: string; tier: Tier; position: number }[] = [];
@@ -89,31 +134,35 @@ export default function TierListView({ viewedUserId }: Props) {
     void reorderUserRatings(viewedUserId, next);
   };
 
-  const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
+  const handleDragStart = (e: DragStartEvent) => {
+    draggingRef.current = true;
+    setActiveId(e.active.id as string);
+  };
 
   const handleDragOver = (e: DragOverEvent) => {
     const { active, over } = e;
     if (!over) return;
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    const activeContainer = findContainer(columns, activeId);
-    const overContainer = findContainer(columns, overId);
-    if (!activeContainer || !overContainer || activeContainer === overContainer)
-      return;
+    const activeKey = active.id as string;
+    const overKey = over.id as string;
+    if (overKey === '__remove__') return;
 
     setColumns((prev) => {
+      const activeContainer = findContainer(prev, activeKey);
+      const overContainer = findContainer(prev, overKey);
+      if (!activeContainer || !overContainer || activeContainer === overContainer)
+        return prev;
       const activeItems = prev[activeContainer];
       const overItems = prev[overContainer];
-      const overIndex = (TIERS as readonly string[]).includes(overId)
+      const overIndex = (TIERS as readonly string[]).includes(overKey)
         ? overItems.length
-        : overItems.indexOf(overId);
+        : overItems.indexOf(overKey);
       const insertAt = overIndex >= 0 ? overIndex : overItems.length;
       return {
         ...prev,
-        [activeContainer]: activeItems.filter((i) => i !== activeId),
+        [activeContainer]: activeItems.filter((i) => i !== activeKey),
         [overContainer]: [
           ...overItems.slice(0, insertAt),
-          activeId,
+          activeKey,
           ...overItems.slice(insertAt),
         ],
       };
@@ -122,48 +171,59 @@ export default function TierListView({ viewedUserId }: Props) {
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
-    const activeId = active.id as string;
+    const activeKey = active.id as string;
     setActiveId(null);
-    if (!over) {
-      persist(columns);
-      return;
-    }
+    draggingRef.current = false;
 
-    // Dropped on the trash zone → remove the rating.
-    if (over.id === '__remove__') {
-      const container = findContainer(columns, activeId);
-      if (container) {
-        const next = {
-          ...columns,
-          [container]: columns[container].filter((i) => i !== activeId),
+    // Dropped on the trash zone → remove the rating entirely.
+    if (over?.id === '__remove__') {
+      setColumns((prev) => {
+        const container = findContainer(prev, activeKey);
+        if (!container) return prev;
+        return {
+          ...prev,
+          [container]: prev[container].filter((i) => i !== activeKey),
         };
-        setColumns(next);
-        void clearRating(viewedUserId, activeId);
-        persist(next);
-      }
+      });
+      void clearRating(viewedUserId, activeKey);
+      persist(columnsRef.current);
       return;
     }
 
-    const overId = over.id as string;
-    const activeContainer = findContainer(columns, activeId);
-    const overContainer = findContainer(columns, overId);
-    let finalColumns = columns;
-
-    if (activeContainer && overContainer && activeContainer === overContainer) {
-      const items = columns[activeContainer];
-      const oldIndex = items.indexOf(activeId);
-      const newIndex = (TIERS as readonly string[]).includes(overId)
-        ? items.length - 1
-        : items.indexOf(overId);
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        finalColumns = {
-          ...columns,
+    if (over) {
+      const overKey = over.id as string;
+      setColumns((prev) => {
+        const activeContainer = findContainer(prev, activeKey);
+        const overContainer = findContainer(prev, overKey);
+        if (
+          !activeContainer ||
+          !overContainer ||
+          activeContainer !== overContainer
+        )
+          return prev;
+        const items = prev[activeContainer];
+        const oldIndex = items.indexOf(activeKey);
+        const newIndex = (TIERS as readonly string[]).includes(overKey)
+          ? items.length - 1
+          : items.indexOf(overKey);
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex)
+          return prev;
+        return {
+          ...prev,
           [activeContainer]: arrayMove(items, oldIndex, newIndex),
         };
-        setColumns(finalColumns);
-      }
+      });
     }
-    persist(finalColumns);
+    persist(columnsRef.current);
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
+    draggingRef.current = false;
+    // Restore the last saved layout.
+    const next = buildColumns(ratingsForUser(viewedUserId));
+    columnsRef.current = next;
+    setColumnsState(next);
   };
 
   const totalRated = TIERS.reduce((n, t) => n + columns[t].length, 0);
@@ -178,6 +238,7 @@ export default function TierListView({ viewedUserId }: Props) {
           editable={editable}
           getName={getName}
           getStatus={getStatus}
+          getImage={getImage}
         />
       ))}
     </div>
@@ -220,16 +281,23 @@ export default function TierListView({ viewedUserId }: Props) {
       {editable ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetection}
+          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           {rows}
           <TrashZone visible={activeId !== null} />
-          <DragOverlay>
+          <DragOverlay dropAnimation={{ duration: 180, easing: 'ease-out' }}>
             {activeId ? (
-              <TierCard name={getName(activeId)} status={getStatus(activeId)} />
+              <TierCard
+                name={getName(activeId)}
+                status={getStatus(activeId)}
+                imageUrl={getImage(activeId)}
+                overlay
+              />
             ) : null}
           </DragOverlay>
         </DndContext>

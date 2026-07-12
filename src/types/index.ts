@@ -20,6 +20,7 @@ export interface Place {
   longitude: number;
   source: 'osm' | 'manual';
   osm_id: string | null;
+  image_url: string | null;
   created_by: string | null;
   created_at: string;
 }

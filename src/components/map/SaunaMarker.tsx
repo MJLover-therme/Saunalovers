@@ -39,7 +39,13 @@ export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
   );
 
   return (
-    <Marker position={[place.latitude, place.longitude]} icon={icon}>
+    <Marker
+      position={[place.latitude, place.longitude]}
+      icon={icon}
+      // Clicking a marker opens the full detail panel (with comments) right
+      // away; the popup stays available for quick actions on the map.
+      eventHandlers={{ click: () => onOpenDetail(place.id) }}
+    >
       <Popup>
         <div className="w-60 space-y-3 font-sans">
           <div>
@@ -56,7 +62,6 @@ export default function SaunaMarker({ place, selected, onOpenDetail }: Props) {
             <VisitStatusPicker
               value={status}
               onChange={(s) => void setVisit(currentUser.id, place.id, s)}
-              compact
             />
           </div>
 

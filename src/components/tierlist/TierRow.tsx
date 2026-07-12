@@ -11,6 +11,7 @@ interface Props {
   editable: boolean;
   getName: (placeId: string) => string;
   getStatus: (placeId: string) => VisitStatus | undefined;
+  getImage: (placeId: string) => string | null;
 }
 
 /** One TierMaker-style row: a colored label block + its cards (droppable). */
@@ -20,6 +21,7 @@ export default function TierRow({
   editable,
   getName,
   getStatus,
+  getImage,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: tier, disabled: !editable });
 
@@ -48,12 +50,18 @@ export default function TierRow({
                 id={id}
                 name={getName(id)}
                 status={getStatus(id)}
+                imageUrl={getImage(id)}
               />
             ))}
           </SortableContext>
         ) : (
           placeIds.map((id) => (
-            <TierCard key={id} name={getName(id)} status={getStatus(id)} />
+            <TierCard
+              key={id}
+              name={getName(id)}
+              status={getStatus(id)}
+              imageUrl={getImage(id)}
+            />
           ))
         )}
 
