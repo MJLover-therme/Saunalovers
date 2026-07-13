@@ -67,3 +67,42 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* Pulsing "neu" bubble above a marker with unseen activity */
+.sl-new-bubble {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: #ec4899;
+  color: #fff;
+  font: 700 9px/1.4 Inter, sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  animation: sl-pulse 1.6s ease-in-out infinite;
+}
+.sl-new-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid #ec4899;
+}
+@keyframes sl-pulse {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 0 0 0 rgba(236, 72, 153, 0.5);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 0 0 6px rgba(236, 72, 153, 0);
+  }
+}

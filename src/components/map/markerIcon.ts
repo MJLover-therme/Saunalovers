@@ -9,8 +9,15 @@ export function buildMarkerIcon(
   status: VisitStatus,
   tier: Tier | undefined,
   selected: boolean,
+  hasUnread = false,
 ): L.DivIcon {
   const color = VISIT_STATUS[status].color;
+
+  // A pulsing "neu" chat bubble above the pin when another user has posted
+  // activity here that the current user hasn't opened yet.
+  const newBubble = hasUnread
+    ? `<div class="sl-new-bubble">neu</div>`
+    : '';
   const badge = tier
     ? `<span style="position:absolute;top:2px;left:50%;transform:translateX(-50%);
          width:16px;height:16px;border-radius:5px;display:flex;align-items:center;
@@ -25,6 +32,7 @@ export function buildMarkerIcon(
 
   const html = `
     <div style="position:relative;width:32px;height:42px;${glow}">
+      ${newBubble}
       <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
         <path d="M16 1C8 1 1.5 7.4 1.5 15.3 1.5 26 16 41 16 41S30.5 26 30.5 15.3C30.5 7.4 24 1 16 1Z"
           fill="${color}" stroke="#fff" stroke-width="2"/>

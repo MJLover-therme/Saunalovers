@@ -7,8 +7,11 @@ import FarPlacesList from './components/places/FarPlacesList';
 import AddPlaceModal from './components/places/AddPlaceModal';
 import UserSwitcher from './components/users/UserSwitcher';
 import LoginScreen from './components/auth/LoginScreen';
+import PresenceBar from './components/presence/PresenceBar';
+import WhatsNewButton from './components/activity/WhatsNewButton';
 import { useData } from './context/DataContext';
 import { useAuth } from './context/CurrentUserContext';
+import { useActivity } from './context/ActivityContext';
 
 type View = 'map' | 'tierlists' | 'far';
 
@@ -21,6 +24,7 @@ const TABS: { id: View; label: string; icon: string }[] = [
 export default function App() {
   const { isAuthenticated } = useAuth();
   const { loading, error } = useData();
+  const { markSeen } = useActivity();
   const [view, setView] = useState<View>('map');
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
@@ -33,6 +37,15 @@ export default function App() {
     setFocusPlaceId(placeId);
   }, []);
   const clearFocus = useCallback(() => setFocusPlaceId(null), []);
+
+  // Opening a place's details also marks its new activity as read.
+  const openDetail = useCallback(
+    (placeId: string) => {
+      setSelectedPlaceId(placeId);
+      markSeen(placeId);
+    },
+    [markSeen],
+  );
 
   // Shared-password gate: nothing else renders until logged in.
   if (!isAuthenticated) return <LoginScreen />;
@@ -78,6 +91,8 @@ export default function App() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <PresenceBar />
+          <WhatsNewButton onGoToSauna={goToSauna} />
           <motion.button
             type="button"
             whileTap={{ scale: 0.95 }}
@@ -113,7 +128,7 @@ export default function App() {
         {view === 'map' && (
           <div className="absolute inset-0">
             <MapView
-              onOpenDetail={setSelectedPlaceId}
+              onOpenDetail={openDetail}
               selectedPlaceId={selectedPlaceId}
               focusPlaceId={focusPlaceId}
               onFocusHandled={clearFocus}
@@ -135,7 +150,7 @@ export default function App() {
                   <UserTierlistsView onGoToSauna={goToSauna} />
                 )}
                 {view === 'far' && (
-                  <FarPlacesList onOpenDetail={setSelectedPlaceId} />
+                  <FarPlacesList onOpenDetail={openDetail} />
                 )}
               </motion.div>
             </AnimatePresence>

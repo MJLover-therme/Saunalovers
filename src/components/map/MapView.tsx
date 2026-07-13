@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap, Marker } from 'react-leaflet';
 import L, { type Marker as LeafletMarker } from 'leaflet';
 import { useData } from '../../context/DataContext';
+import { useActivity } from '../../context/ActivityContext';
 import { KARLSRUHE, DEFAULT_ZOOM, RADIUS_KM, VISIT_STATUS, VISIT_STATUS_ORDER } from '../../lib/config';
 import type { Place } from '../../types';
 import SaunaMarker from './SaunaMarker';
@@ -68,17 +69,28 @@ function FocusController({
   useEffect(() => {
     if (!focusPlaceId) return;
     const place = places.find((p) => p.id === focusPlaceId);
-    if (!place) {
+    if (
+      !place ||
+      !map ||
+      !Number.isFinite(place.latitude) ||
+      !Number.isFinite(place.longitude)
+    ) {
       onFocusHandled?.();
       return;
     }
-    map.flyTo(
-      [place.latitude, place.longitude],
-      Math.max(map.getZoom(), 13),
-      { duration: 0.9 },
-    );
+    try {
+      map.flyTo([place.latitude, place.longitude], Math.max(map.getZoom(), 13), {
+        duration: 0.9,
+      });
+    } catch {
+      /* map not ready — ignore */
+    }
     const t = setTimeout(() => {
-      markerRefs.current[focusPlaceId]?.openPopup();
+      try {
+        markerRefs.current[focusPlaceId]?.openPopup();
+      } catch {
+        /* marker gone — ignore */
+      }
       onFocusHandled?.();
     }, 950);
     return () => clearTimeout(t);
@@ -97,6 +109,7 @@ export default function MapView({
   picked,
 }: Props) {
   const { places } = useData();
+  const { unreadByPlace, markSeen } = useActivity();
   const markerRefs = useRef<Record<string, LeafletMarker | null>>({});
 
   return (
@@ -131,7 +144,9 @@ export default function MapView({
             key={place.id}
             place={place}
             selected={place.id === selectedPlaceId || place.id === focusPlaceId}
+            hasUnread={unreadByPlace.has(place.id)}
             onOpenDetail={onOpenDetail}
+            onSeen={markSeen}
             registerMarker={(id, m) => {
               markerRefs.current[id] = m;
             }}

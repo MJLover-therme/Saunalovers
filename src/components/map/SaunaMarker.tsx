@@ -13,7 +13,9 @@ import type { Place } from '../../types';
 interface Props {
   place: Place;
   selected: boolean;
+  hasUnread: boolean;
   onOpenDetail: (placeId: string) => void;
+  onSeen: (placeId: string) => void;
   registerMarker: (placeId: string, marker: LeafletMarker | null) => void;
 }
 
@@ -25,7 +27,9 @@ interface Props {
 export default function SaunaMarker({
   place,
   selected,
+  hasUnread,
   onOpenDetail,
+  onSeen,
   registerMarker,
 }: Props) {
   const { currentUser } = useCurrentUser();
@@ -48,8 +52,8 @@ export default function SaunaMarker({
   );
 
   const icon = useMemo(
-    () => buildMarkerIcon(status, rating?.tier, selected),
-    [status, rating?.tier, selected],
+    () => buildMarkerIcon(status, rating?.tier, selected, hasUnread),
+    [status, rating?.tier, selected, hasUnread],
   );
 
   return (
@@ -57,6 +61,8 @@ export default function SaunaMarker({
       position={[place.latitude, place.longitude]}
       icon={icon}
       ref={(m) => registerMarker(place.id, m)}
+      // Opening the popup means the user has read this place's activity.
+      eventHandlers={{ popupopen: () => onSeen(place.id) }}
     >
       <Popup>
         <div className="w-64 space-y-3 font-sans">

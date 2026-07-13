@@ -4,6 +4,7 @@ import Avatar from '../ui/Avatar';
 import TierListView from '../tierlist/TierListView';
 import { useData } from '../../context/DataContext';
 import { useCurrentUser } from '../../context/CurrentUserContext';
+import { usePresence } from '../../context/PresenceContext';
 
 interface Props {
   onGoToSauna: (placeId: string) => void;
@@ -16,6 +17,7 @@ interface Props {
 export default function UserTierlistsView({ onGoToSauna }: Props) {
   const { currentUser } = useCurrentUser();
   const { users, ratingsForUser } = useData();
+  const { isOnline } = usePresence();
   const [selectedId, setSelectedId] = useState(currentUser.id);
 
   return (
@@ -42,6 +44,7 @@ export default function UserTierlistsView({ onGoToSauna }: Props) {
                 username={u.username}
                 color={u.color}
                 ring={active}
+                online={u.id !== currentUser.id && isOnline(u.id)}
               />
               <div className="text-left">
                 <p className="text-sm font-semibold text-slate-100">
@@ -50,7 +53,12 @@ export default function UserTierlistsView({ onGoToSauna }: Props) {
                     <span className="text-slate-500"> (du)</span>
                   )}
                 </p>
-                <p className="text-xs text-slate-400">{count} bewertet</p>
+                <p className="text-xs text-slate-400">
+                  {count} bewertet
+                  {u.id !== currentUser.id && isOnline(u.id) && (
+                    <span className="text-green-400"> · online</span>
+                  )}
+                </p>
               </div>
             </motion.button>
           );
